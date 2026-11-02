@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitanga Biocosméticos - Gestão & Precificação</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pitanga: {
+                            50: '#fdf6f4',
+                            100: '#fbeae4',
+                            200: '#f7d3c8',
+                            300: '#f0b19e',
+                            400: '#e58268',
+                            500: '#d25338',
+                            600: '#b83e26',
+                            700: '#99301d',
+                            800: '#7f2b1d',
+                            900: '#68271d',
+                        },
+                        botanico: {
+                            50: '#f2f8f4',
+                            100: '#dfefe5',
+                            500: '#43805f',
+                            600: '#2d5a43',
+                            700: '#244937',
+                        },
+                        nude: {
+                            50: '#fdfbf7',
+                            100: '#f8f4ee',
+                            200: '#f0e8dc',
+                            300: '#e4d6c3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #fdfbf7; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-nude-50 text-stone-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Cabeçalho -->
+    <header class="bg-white border-b border-nude-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logotipo e Título Pitanga Biocosméticos -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white border border-botanico-600 p-1 flex items-center justify-center shadow-sm overflow-hidden hover:scale-105 transition-transform">
+                        <!-- Logo oficial PI TAN GA em SVG vetorial fiel à marca -->
+                        <svg viewBox="0 0 200 200" class="w-full h-full">
+                            <rect x="6" y="6" width="188" height="188" fill="none" stroke="#2D5A43" stroke-width="10"/>
+                            <text x="22" y="44" fill="#2D5A43" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="28">PI</text>
+                            <path d="M 28 60 H 122 V 75 H 85 V 155 H 65 V 75 H 28 Z" fill="#2D5A43"/>
+                            <path d="M 105 155 L 125 60 H 145 L 165 155 H 146 L 140 126 H 120 L 114 155 Z M 123 111 H 137 L 130 76 Z" fill="#2D5A43"/>
+                            <path d="M 148 60 H 168 L 195 155 H 176 L 160 92 V 155 H 148 Z" fill="#2D5A43"/>
+                            <text x="142" y="180" fill="#2D5A43" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="26">GA</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-stone-900 text-base sm:text-lg leading-tight tracking-tight flex items-center gap-1.5">
+                            Pitanga <span class="text-pitanga-600 font-normal">Biocosméticos</span>
+                        </h1>
+                        <p class="text-[11px] text-stone-500 hidden sm:block font-medium">Controle de Estoque & Precificação Inteligente</p>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação Global (Backup/Restore) -->
+                <div class="flex items-center gap-2">
+                    <button onclick="exportarDados()" title="Exportar Backup" class="p-2 text-stone-600 hover:text-pitanga-600 hover:bg-nude-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden md:inline">Baixar Backup</span>
+                    </button>
+                    <label title="Restaurar Backup" class="p-2 text-stone-600 hover:text-pitanga-600 hover:bg-nude-100 rounded-lg transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span class="hidden md:inline">Restaurar</span>
+                        <input type="file" id="importFile" onchange="importarDados(event)" class="hidden" accept=".json">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu de Navegação Por Abas -->
+        <div class="border-t border-nude-200 bg-stone-50/50 overflow-x-auto no-scrollbar">
+            <div class="max-w-7xl mx-auto px-4 flex gap-1 sm:gap-2">
+                <button onclick="switchTab('insumos')" id="tab-insumos" class="tab-btn active px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-pitanga-600 text-pitanga-600 whitespace-nowrap">
+                    <i data-lucide="flask-conical" class="w-4 h-4"></i> Matérias-Primas
+                </button>
+                <button onclick="switchTab('embalagens')" id="tab-embalagens" class="tab-btn px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">
+                    <i data-lucide="box" class="w-4 h-4"></i> Embalagens & Rótulos
+                </button>
+                <button onclick="switchTab('envio')" id="tab-envio" class="tab-btn px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">
+                    <i data-lucide="truck" class="w-4 h-4"></i> Itens de Envio
+                </button>
+                <button onclick="switchTab('estoque-insumos')" id="tab-estoque-insumos" class="tab-btn px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">
+                    <i data-lucide="warehouse" class="w-4 h-4"></i> Estoque Materiais
+                </button>
+                <button onclick="switchTab('taxas')" id="tab-taxas" class="tab-btn px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">
+                    <i data-lucide="percent" class="w-4 h-4"></i> Taxas Canais
+                </button>
+                <button onclick="switchTab('precificacao')" id="tab-precificacao" class="tab-btn px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">
+                    <i data-lucide="calculator" class="w-4 h-4"></i> Precificação
+                </button>
+                <button onclick="switchTab('produtos')" id="tab-produtos" class="tab-btn px-3 sm:px-4 py-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 border-transparent text-stone-500 hover:text-stone-800 whitespace-nowrap">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Produtos Acabados
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- ABA 1: INSUMOS (MATÉRIAS-PRIMAS) -->
+        <section id="content-insumos" class="tab-content active space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form Cadastro Insumo -->
+                <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 text-pitanga-700 font-bold text-base border-b border-nude-100 pb-3">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-pitanga-600"></i>
+                        Nova Matéria-Prima
+                    </div>
+                    <form id="formInsumo" onsubmit="salvarInsumo(event)" class="space-y-4">
+                        <input type="hidden" id="insumoId">
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Insumo/Ativo *</label>
+                            <input type="text" id="insumoNome" placeholder="Ex: Óleo de Rosa Mosqueta, Cera de Abelha" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Qtd Comprada *</label>
+                                <input type="number" step="0.01" id="insumoQtdComprada" placeholder="Ex: 500" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Unidade *</label>
+                                <select id="insumoUnidade" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                                    <option value="g">Gramas (g)</option>
+                                    <option value="ml">Mililitros (ml)</option>
+                                    <option value="un">Unidade (un)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Valor Total (R$) *</label>
+                                <input type="number" step="0.01" id="insumoPrecoTotal" placeholder="Ex: 85.00" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Estoque Mínimo</label>
+                                <input type="number" step="0.01" id="insumoEstoqueMin" placeholder="Ex: 50" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="submit" class="flex-1 bg-pitanga-600 hover:bg-pitanga-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Salvar Insumo
+                            </button>
+                            <button type="button" onclick="limparFormInsumo()" class="bg-stone-100 hover:bg-stone-200 text-stone-600 font-semibold py-2.5 px-3 rounded-xl text-sm transition-colors">
+                                Limpar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabela de Insumos -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-nude-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center border-b border-nude-100 pb-3 mb-4">
+                            <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                                <i data-lucide="list" class="w-5 h-5 text-pitanga-600"></i> Matérias-Primas Cadastradas
+                            </h2>
+                            <span id="countInsumos" class="bg-nude-100 text-pitanga-800 text-xs px-2.5 py-1 rounded-full font-bold">0 itens</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs sm:text-sm">
+                                <thead>
+                                    <tr class="border-b border-stone-100 text-stone-400 font-semibold">
+                                        <th class="pb-2">Nome</th>
+                                        <th class="pb-2 text-center">Compra</th>
+                                        <th class="pb-2 text-right">Custo Unit.</th>
+                                        <th class="pb-2 text-center">Estoque Atual</th>
+                                        <th class="pb-2 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaInsumos" class="divide-y divide-stone-100">
+                                    <!-- Dinâmico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 2: EMBALAGENS E RÓTULOS -->
+        <section id="content-embalagens" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 text-pitanga-700 font-bold text-base border-b border-nude-100 pb-3">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-pitanga-600"></i>
+                        Nova Embalagem / Rótulo
+                    </div>
+                    <form id="formEmbalagem" onsubmit="salvarEmbalagem(event)" class="space-y-4">
+                        <input type="hidden" id="embId">
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Item *</label>
+                            <input type="text" id="embNome" placeholder="Ex: Frasco Dropper 30ml, Rótulo Vinil" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Qtd do Lote *</label>
+                                <input type="number" id="embQtd" placeholder="Ex: 100" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Valor Total (R$) *</label>
+                                <input type="number" step="0.01" id="embPrecoTotal" placeholder="Ex: 150.00" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Estoque Mínimo</label>
+                            <input type="number" id="embEstoqueMin" placeholder="Ex: 20" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="submit" class="flex-1 bg-pitanga-600 hover:bg-pitanga-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Salvar Embalagem
+                            </button>
+                            <button type="button" onclick="limparFormEmbalagem()" class="bg-stone-100 hover:bg-stone-200 text-stone-600 font-semibold py-2.5 px-3 rounded-xl text-sm transition-colors">
+                                Limpar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-nude-200 shadow-sm">
+                    <div class="flex justify-between items-center border-b border-nude-100 pb-3 mb-4">
+                        <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                            <i data-lucide="box" class="w-5 h-5 text-pitanga-600"></i> Embalagens Cadastradas
+                        </h2>
+                        <span id="countEmbalagens" class="bg-nude-100 text-pitanga-800 text-xs px-2.5 py-1 rounded-full font-bold">0 itens</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-stone-100 text-stone-400 font-semibold">
+                                    <th class="pb-2">Nome</th>
+                                    <th class="pb-2 text-center">Lote Comprado</th>
+                                    <th class="pb-2 text-right">Custo Un.</th>
+                                    <th class="pb-2 text-center">Estoque Atual</th>
+                                    <th class="pb-2 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaEmbalagens" class="divide-y divide-stone-100">
+                                <!-- Dinâmico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 3: ITENS DE ENVIO -->
+        <section id="content-envio" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-4">
+                    <div class="flex items-center gap-2 text-pitanga-700 font-bold text-base border-b border-nude-100 pb-3">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-pitanga-600"></i>
+                        Novo Item de Envio
+                    </div>
+                    <form id="formEnvio" onsubmit="salvarEnvio(event)" class="space-y-4">
+                        <input type="hidden" id="envioId">
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Item *</label>
+                            <input type="text" id="envioNome" placeholder="Ex: Caixa Correio P, Papel de Seda, Mimo" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Qtd do Lote *</label>
+                                <input type="number" id="envioQtd" placeholder="Ex: 50" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Valor Total (R$) *</label>
+                                <input type="number" step="0.01" id="envioPrecoTotal" placeholder="Ex: 60.00" required class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Estoque Mínimo</label>
+                            <input type="number" id="envioEstoqueMin" placeholder="Ex: 15" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="submit" class="flex-1 bg-pitanga-600 hover:bg-pitanga-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Salvar Item Envio
+                            </button>
+                            <button type="button" onclick="limparFormEnvio()" class="bg-stone-100 hover:bg-stone-200 text-stone-600 font-semibold py-2.5 px-3 rounded-xl text-sm transition-colors">
+                                Limpar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-nude-200 shadow-sm">
+                    <div class="flex justify-between items-center border-b border-nude-100 pb-3 mb-4">
+                        <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                            <i data-lucide="truck" class="w-5 h-5 text-pitanga-600"></i> Itens de Envio Cadastrados
+                        </h2>
+                        <span id="countEnvio" class="bg-nude-100 text-pitanga-800 text-xs px-2.5 py-1 rounded-full font-bold">0 itens</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-stone-100 text-stone-400 font-semibold">
+                                    <th class="pb-2">Nome</th>
+                                    <th class="pb-2 text-center">Lote</th>
+                                    <th class="pb-2 text-right">Custo Un.</th>
+                                    <th class="pb-2 text-center">Estoque Atual</th>
+                                    <th class="pb-2 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaEnvio" class="divide-y divide-stone-100">
+                                <!-- Dinâmico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 4: ESTOQUE DE MATERIAIS (INSUMOS E EMBALAGENS) -->
+        <section id="content-estoque-insumos" class="tab-content space-y-6">
+            <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-nude-100 pb-3 gap-2">
+                    <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                        <i data-lucide="warehouse" class="w-5 h-5 text-pitanga-600"></i> Controle Geral de Estoque de Insumos & Embalagens
+                    </h2>
+                    <p class="text-xs text-stone-500">Este estoque é abatido automaticamente ao registrar vendas ou produzir lotes.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-stone-100 text-stone-400 font-semibold">
+                                <th class="pb-2">Tipo</th>
+                                <th class="pb-2">Material</th>
+                                <th class="pb-2 text-center">Qtd Atual</th>
+                                <th class="pb-2 text-center">Estoque Mín.</th>
+                                <th class="pb-2 text-center">Status</th>
+                                <th class="pb-2 text-right">Ajuste Rápido / Entrada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaEstoqueGeralMateriais" class="divide-y divide-stone-100">
+                            <!-- Dinâmico -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 5: TAXAS DOS CANAIS DE VENDA -->
+        <section id="content-taxas" class="tab-content space-y-6">
+            <div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl border border-nude-200 shadow-sm space-y-6">
+                <div class="border-b border-nude-100 pb-3">
+                    <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                        <i data-lucide="percent" class="w-5 h-5 text-pitanga-600"></i> Configuração de Taxas dos Canais de Venda
+                    </h2>
+                    <p class="text-xs text-stone-500">As taxas cadastradas aqui serão aplicadas automaticamente na precificação final dos seus produtos.</p>
+                </div>
+
+                <form id="formTaxas" onsubmit="salvarTaxas(event)" class="space-y-6">
+                    <!-- Site Próprio -->
+                    <div class="bg-nude-50/70 p-4 rounded-xl border border-nude-200 space-y-3">
+                        <h3 class="font-bold text-stone-800 text-sm flex items-center gap-2 text-botanico-700">
+                            <i data-lucide="globe" class="w-4 h-4"></i> Site Próprio
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Taxa Percentual (%)</label>
+                                <input type="number" step="0.01" id="taxaSitePct" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Taxa Fixa por Item (R$)</label>
+                                <input type="number" step="0.01" id="taxaSiteFixa" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shopee -->
+                    <div class="bg-pitanga-50/30 p-4 rounded-xl border border-pitanga-100 space-y-3">
+                        <h3 class="font-bold text-pitanga-700 text-sm flex items-center gap-2">
+                            <i data-lucide="shopping-bag" class="w-4 h-4"></i> Shopee
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Comissão / Taxa (%)</label>
+                                <input type="number" step="0.01" id="taxaShopeePct" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Taxa Fixa por Item (R$)</label>
+                                <input type="number" step="0.01" id="taxaShopeeFixa" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-pitanga-600 hover:bg-pitanga-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Atualizar Taxas dos Canais
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ABA 6: PRECIFICAÇÃO E MONTAGEM DA FÓRMULA -->
+        <section id="content-precificacao" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-nude-100 pb-3">
+                            <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                                <i data-lucide="flask-conical" class="w-5 h-5 text-pitanga-600"></i> Montar Fórmula & Produto
+                            </h2>
+                            <button onclick="novoProdutoForm()" class="text-xs text-pitanga-600 font-semibold hover:underline">
+                                + Limpar Formulário
+                            </button>
+                        </div>
+
+                        <input type="hidden" id="prodId">
+                        
+                        <!-- Dados do Produto -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Produto Cosmético *</label>
+                                <input type="text" id="prodNome" placeholder="Ex: Sérum Facial Iluminador 30ml" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Estoque Inicial (Acabado)</label>
+                                <input type="number" id="prodEstoqueInicial" placeholder="Ex: 10" value="0" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- 1. Adicionar Matérias-Primas -->
+                        <div class="bg-nude-50/60 p-4 rounded-xl border border-nude-200 space-y-3">
+                            <h3 class="font-bold text-stone-800 text-xs uppercase tracking-wider text-pitanga-800">1. Matérias-Primas (Fórmula)</h3>
+                            <div class="flex gap-2">
+                                <select id="selectInsumoOpcao" class="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none">
+                                    <!-- Opções dinâmicas -->
+                                </select>
+                                <input type="number" step="0.01" id="selectInsumoQtd" placeholder="Qtd (g/ml)" class="w-24 sm:w-28 px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none">
+                                <button type="button" onclick="adicionarInsumoNaFormulacao()" class="bg-stone-800 hover:bg-stone-900 text-white px-3 py-2 rounded-xl text-xs font-semibold">
+                                    Adicionar
+                                </button>
+                            </div>
+                            <div id="listaInsumosFormulacao" class="space-y-1.5 pt-2">
+                                <!-- Lista adicionada dinamicamente -->
+                            </div>
+                        </div>
+
+                        <!-- 2. Adicionar Embalagens -->
+                        <div class="bg-nude-50/60 p-4 rounded-xl border border-nude-200 space-y-3">
+                            <h3 class="font-bold text-stone-800 text-xs uppercase tracking-wider text-pitanga-800">2. Embalagens e Rótulos</h3>
+                            <div class="flex gap-2">
+                                <select id="selectEmbOpcao" class="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none">
+                                    <!-- Opções dinâmicas -->
+                                </select>
+                                <input type="number" id="selectEmbQtd" placeholder="Qtd (un)" value="1" class="w-24 sm:w-28 px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none">
+                                <button type="button" onclick="adicionarEmbNaFormulacao()" class="bg-stone-800 hover:bg-stone-900 text-white px-3 py-2 rounded-xl text-xs font-semibold">
+                                    Adicionar
+                                </button>
+                            </div>
+                            <div id="listaEmbFormulacao" class="space-y-1.5 pt-2">
+                                <!-- Lista dinamicamente -->
+                            </div>
+                        </div>
+
+                        <!-- 3. Adicionar Itens de Envio -->
+                        <div class="bg-nude-50/60 p-4 rounded-xl border border-nude-200 space-y-3">
+                            <h3 class="font-bold text-stone-800 text-xs uppercase tracking-wider text-pitanga-800">3. Itens de Envio (Por Unidade/Pedido)</h3>
+                            <div class="flex gap-2">
+                                <select id="selectEnvioOpcao" class="flex-1 px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none">
+                                    <!-- Opções dinâmicas -->
+                                </select>
+                                <input type="number" id="selectEnvioQtd" placeholder="Qtd (un)" value="1" class="w-24 sm:w-28 px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none">
+                                <button type="button" onclick="adicionarEnvioNaFormulacao()" class="bg-stone-800 hover:bg-stone-900 text-white px-3 py-2 rounded-xl text-xs font-semibold">
+                                    Adicionar
+                                </button>
+                            </div>
+                            <div id="listaEnvioFormulacao" class="space-y-1.5 pt-2">
+                                <!-- Lista dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel Lateral de Simulação Financeira -->
+                <div class="space-y-6">
+                    <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-5 sticky top-24">
+                        <h2 class="font-bold text-stone-900 text-base border-b border-nude-100 pb-3 flex items-center gap-2">
+                            <i data-lucide="calculator" class="w-5 h-5 text-pitanga-600"></i> Resumo financeiro
+                        </h2>
+
+                        <!-- Margem de Lucro Desejada -->
+                        <div>
+                            <label class="block text-xs font-semibold text-stone-600 mb-1">Margem de Lucro Desejada (%)</label>
+                            <input type="number" step="1" id="prodMargemLucro" value="100" oninput="calcularPrecificacaoSimulada()" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none font-bold text-stone-800">
+                        </div>
+
+                        <!-- Custo de Produção Base -->
+                        <div class="bg-nude-100/60 p-3.5 rounded-xl space-y-1">
+                            <p class="text-xs text-stone-500 font-medium">Custo Total de Produção (CMV)</p>
+                            <p id="resumoCustoTotal" class="text-xl font-extrabold text-stone-900">R$ 0,00</p>
+                        </div>
+
+                        <!-- Precificação Site -->
+                        <div class="bg-botanico-50/60 p-3.5 rounded-xl border border-botanico-100 space-y-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-botanico-700 flex items-center gap-1"><i data-lucide="globe" class="w-3.5 h-3.5"></i> Venda Site</span>
+                                <span id="resumoLucroSite" class="text-[11px] font-bold text-botanico-700">Lucro: R$ 0,00</span>
+                            </div>
+                            <p id="resumoPrecoSite" class="text-xl font-extrabold text-botanico-700">R$ 0,00</p>
+                        </div>
+
+                        <!-- Precificação Shopee -->
+                        <div class="bg-pitanga-50/50 p-3.5 rounded-xl border border-pitanga-100 space-y-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-pitanga-700 flex items-center gap-1"><i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i> Venda Shopee</span>
+                                <span id="resumoLucroShopee" class="text-[11px] font-bold text-pitanga-700">Lucro: R$ 0,00</span>
+                            </div>
+                            <p id="resumoPrecoShopee" class="text-xl font-extrabold text-pitanga-700">R$ 0,00</p>
+                        </div>
+
+                        <button type="button" onclick="salvarProdutoCompleto()" class="w-full bg-pitanga-600 hover:bg-pitanga-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="check" class="w-4 h-4"></i> Salvar Produto
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 7: ESTOQUE E PRODUTOS ACABADOS -->
+        <section id="content-produtos" class="tab-content space-y-6">
+            <div class="bg-white p-5 rounded-2xl border border-nude-200 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-nude-100 pb-3 gap-2">
+                    <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-pitanga-600"></i> Produtos Acabados & Controle de Vendas
+                    </h2>
+                    <span id="countProdutos" class="bg-nude-100 text-pitanga-800 text-xs px-2.5 py-1 rounded-full font-bold">0 produtos</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-stone-100 text-stone-400 font-semibold">
+                                <th class="pb-2">Produto</th>
+                                <th class="pb-2 text-center">Custo (CMV)</th>
+                                <th class="pb-2 text-center">Preço Site</th>
+                                <th class="pb-2 text-center">Preço Shopee</th>
+                                <th class="pb-2 text-center">Estoque Atual</th>
+                                <th class="pb-2 text-center">Registrar Venda</th>
+                                <th class="pb-2 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaProdutos" class="divide-y divide-stone-100">
+                            <!-- Dinâmico -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE LOTE DE PRODUÇÃO -->
+    <div id="modalProducao" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b border-nude-100 pb-3">
+                <h3 class="font-bold text-stone-900 text-base flex items-center gap-2">
+                    <i data-lucide="factory" class="w-5 h-5 text-pitanga-600"></i> Produzir Lote de Cosméticos
+                </h3>
+                <button onclick="fecharModalProducao()" class="text-stone-400 hover:text-stone-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-xs text-stone-500">Ao produzir um lote, a quantidade informada será somada ao estoque de produtos acabados e os insumos/embalagens correspondentes serão <b>abatidos automaticamente</b> do seu estoque.</p>
+            
+            <input type="hidden" id="prodLoteId">
+            <div>
+                <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Produto</label>
+                <input type="text" id="prodLoteNome" disabled class="w-full px-3 py-2 text-sm bg-stone-100 border border-stone-200 rounded-xl text-stone-600">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-stone-600 mb-1">Quantidade Produzida (Unidades) *</label>
+                <input type="number" id="prodLoteQtd" value="10" min="1" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none font-bold">
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="confirmarProducaoLote()" class="flex-1 bg-pitanga-600 hover:bg-pitanga-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i> Confirmar Produção
+                </button>
+                <button onclick="fecharModalProducao()" class="bg-stone-100 hover:bg-stone-200 text-stone-600 font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA E DADOS -->
+    <script>
+        let state = {
+            insumos: [],
+            embalagens: [],
+            envios: [],
+            taxas: { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0 },
+            produtos: []
+        };
+
+        let formulacaoAtual = { insumos: [], embalagens: [], envios: [] };
+
+        // NAVEGAÇÃO DE ABAS
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'border-pitanga-600', 'text-pitanga-600');
+                el.classList.add('border-transparent', 'text-stone-500');
+            });
+
+            const activeContent = document.getElementById(`content-${tabId}`);
+            const activeTab = document.getElementById(`tab-${tabId}`);
+
+            if (activeContent) activeContent.classList.add('active');
+            if (activeTab) {
+                activeTab.classList.add('active', 'border-pitanga-600', 'text-pitanga-600');
+                activeTab.classList.remove('border-transparent', 'text-stone-500');
+            }
+
+            if (tabId === 'precificacao') atualizarSelectsFormulacao();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // PERSISTÊNCIA COMPLETA EM LOCALSTORAGE
+        function salvarLocalStorage() {
+            try {
+                localStorage.setItem('pitanga_biocosmeticos_data', JSON.stringify(state));
+            } catch (e) {
+                console.warn("Falha ao salvar no LocalStorage:", e);
+            }
+            renderizarTudo();
+        }
+
+        function carregarLocalStorage() {
+            let data = null;
+            try {
+                data = localStorage.getItem('pitanga_biocosmeticos_data');
+            } catch (e) {
+                console.warn("Falha ao carregar LocalStorage:", e);
+            }
+
+            if (data) {
+                try {
+                    state = JSON.parse(data);
+                } catch(e) { console.error("Erro ao converter JSON", e); }
+            } else {
+                state = {
+                    insumos: [
+                        { id: '1', nome: 'Óleo de Jojoba', qtdComprada: 500, unidade: 'ml', precoTotal: 120, estoqueAtual: 500, estoqueMin: 100 },
+                        { id: '2', nome: 'Extrato de Pitanga', qtdComprada: 100, unidade: 'ml', precoTotal: 45, estoqueAtual: 100, estoqueMin: 20 }
+                    ],
+                    embalagens: [
+                        { id: '1', nome: 'Frasco Conta-gotas 30ml', qtd: 50, precoTotal: 125, estoqueAtual: 50, estoqueMin: 10 },
+                        { id: '2', nome: 'Rótulo Adesivo Vinil', qtd: 100, precoTotal: 80, estoqueAtual: 100, estoqueMin: 20 }
+                    ],
+                    envios: [
+                        { id: '1', nome: 'Caixa Papelão Kraft P', qtd: 50, precoTotal: 75, estoqueAtual: 50, estoqueMin: 10 },
+                        { id: '2', nome: 'Papel de Seda + Adesivo', qtd: 100, precoTotal: 30, estoqueAtual: 100, estoqueMin: 20 }
+                    ],
+                    taxas: { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0 },
+                    produtos: []
+                };
+            }
+        }
+
+        function renderizarTudo() {
+            renderizarInsumos();
+            renderizarEmbalagens();
+            renderizarEnvios();
+            renderizarEstoqueGeral();
+            renderizarTaxas();
+            renderizarProdutos();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // INSUMOS
+        function salvarInsumo(e) {
+            e.preventDefault();
+            const id = document.getElementById('insumoId').value;
+            const nome = document.getElementById('insumoNome').value.trim();
+            const qtdComprada = parseFloat(document.getElementById('insumoQtdComprada').value);
+            const unidade = document.getElementById('insumoUnidade').value;
+            const precoTotal = parseFloat(document.getElementById('insumoPrecoTotal').value);
+            const estoqueMin = parseFloat(document.getElementById('insumoEstoqueMin').value) || 0;
+
+            if (id) {
+                const idx = state.insumos.findIndex(i => i.id === id);
+                if (idx !== -1) {
+                    state.insumos[idx] = { ...state.insumos[idx], nome, qtdComprada, unidade, precoTotal, estoqueMin };
+                }
+            } else {
+                state.insumos.push({
+                    id: Date.now().toString(),
+                    nome, qtdComprada, unidade, precoTotal,
+                    estoqueAtual: qtdComprada,
+                    estoqueMin
+                });
+            }
+            limparFormInsumo();
+            salvarLocalStorage();
+        }
+
+        function limparFormInsumo() {
+            document.getElementById('insumoId').value = '';
+            document.getElementById('formInsumo').reset();
+        }
+
+        function editarInsumo(id) {
+            const ins = state.insumos.find(i => i.id === id);
+            if (!ins) return;
+            document.getElementById('insumoId').value = ins.id;
+            document.getElementById('insumoNome').value = ins.nome;
+            document.getElementById('insumoQtdComprada').value = ins.qtdComprada;
+            document.getElementById('insumoUnidade').value = ins.unidade;
+            document.getElementById('insumoPrecoTotal').value = ins.precoTotal;
+            document.getElementById('insumoEstoqueMin').value = ins.estoqueMin || 0;
+            switchTab('insumos');
+        }
+
+        function excluirInsumo(id) {
+            state.insumos = state.insumos.filter(i => i.id !== id);
+            salvarLocalStorage();
+        }
+
+        function renderizarInsumos() {
+            const tbody = document.getElementById('tabelaInsumos');
+            const count = document.getElementById('countInsumos');
+            if (count) count.innerText = `${state.insumos.length} itens`;
+            if (!tbody) return;
+
+            tbody.innerHTML = state.insumos.map(i => {
+                const custoUnit = (i.precoTotal / i.qtdComprada) || 0;
+                return `
+                    <tr class="hover:bg-stone-50/80">
+                        <td class="py-3 font-medium text-stone-800">${i.nome}</td>
+                        <td class="py-3 text-center text-stone-600">${i.qtdComprada} ${i.unidade} (R$ ${i.precoTotal.toFixed(2)})</td>
+                        <td class="py-3 text-right font-semibold text-stone-800">R$ ${custoUnit.toFixed(4)} / ${i.unidade}</td>
+                        <td class="py-3 text-center font-bold ${i.estoqueAtual <= i.estoqueMin ? 'text-pitanga-600' : 'text-stone-700'}">${i.estoqueAtual} ${i.unidade}</td>
+                        <td class="py-3 text-right space-x-1">
+                            <button onclick="editarInsumo('${i.id}')" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="excluirInsumo('${i.id}')" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // EMBALAGENS
+        function salvarEmbalagem(e) {
+            e.preventDefault();
+            const id = document.getElementById('embId').value;
+            const nome = document.getElementById('embNome').value.trim();
+            const qtd = parseFloat(document.getElementById('embQtd').value);
+            const precoTotal = parseFloat(document.getElementById('embPrecoTotal').value);
+            const estoqueMin = parseFloat(document.getElementById('embEstoqueMin').value) || 0;
+
+            if (id) {
+                const idx = state.embalagens.findIndex(e => e.id === id);
+                if (idx !== -1) {
+                    state.embalagens[idx] = { ...state.embalagens[idx], nome, qtd, precoTotal, estoqueMin };
+                }
+            } else {
+                state.embalagens.push({
+                    id: Date.now().toString(),
+                    nome, qtd, precoTotal,
+                    estoqueAtual: qtd,
+                    estoqueMin
+                });
+            }
+            limparFormEmbalagem();
+            salvarLocalStorage();
+        }
+
+        function limparFormEmbalagem() {
+            document.getElementById('embId').value = '';
+            document.getElementById('formEmbalagem').reset();
+        }
+
+        function editarEmbalagem(id) {
+            const emb = state.embalagens.find(e => e.id === id);
+            if (!emb) return;
+            document.getElementById('embId').value = emb.id;
+            document.getElementById('embNome').value = emb.nome;
+            document.getElementById('embQtd').value = emb.qtd;
+            document.getElementById('embPrecoTotal').value = emb.precoTotal;
+            document.getElementById('embEstoqueMin').value = emb.estoqueMin || 0;
+            switchTab('embalagens');
+        }
+
+        function excluirEmbalagem(id) {
+            state.embalagens = state.embalagens.filter(e => e.id !== id);
+            salvarLocalStorage();
+        }
+
+        function renderizarEmbalagens() {
+            const tbody = document.getElementById('tabelaEmbalagens');
+            const count = document.getElementById('countEmbalagens');
+            if (count) count.innerText = `${state.embalagens.length} itens`;
+            if (!tbody) return;
+
+            tbody.innerHTML = state.embalagens.map(e => {
+                const custoUnit = (e.precoTotal / e.qtd) || 0;
+                return `
+                    <tr class="hover:bg-stone-50/80">
+                        <td class="py-3 font-medium text-stone-800">${e.nome}</td>
+                        <td class="py-3 text-center text-stone-600">${e.qtd} un (R$ ${e.precoTotal.toFixed(2)})</td>
+                        <td class="py-3 text-right font-semibold text-stone-800">R$ ${custoUnit.toFixed(2)} / un</td>
+                        <td class="py-3 text-center font-bold ${e.estoqueAtual <= e.estoqueMin ? 'text-pitanga-600' : 'text-stone-700'}">${e.estoqueAtual} un</td>
+                        <td class="py-3 text-right space-x-1">
+                            <button onclick="editarEmbalagem('${e.id}')" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="excluirEmbalagem('${e.id}')" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ENVIOS
+        function salvarEnvio(e) {
+            e.preventDefault();
+            const id = document.getElementById('envioId').value;
+            const nome = document.getElementById('envioNome').value.trim();
+            const qtd = parseFloat(document.getElementById('envioQtd').value);
+            const precoTotal = parseFloat(document.getElementById('envioPrecoTotal').value);
+            const estoqueMin = parseFloat(document.getElementById('envioEstoqueMin').value) || 0;
+
+            if (id) {
+                const idx = state.envios.findIndex(en => en.id === id);
+                if (idx !== -1) {
+                    state.envios[idx] = { ...state.envios[idx], nome, qtd, precoTotal, estoqueMin };
+                }
+            } else {
+                state.envios.push({
+                    id: Date.now().toString(),
+                    nome, qtd, precoTotal,
+                    estoqueAtual: qtd,
+                    estoqueMin
+                });
+            }
+            limparFormEnvio();
+            salvarLocalStorage();
+        }
+
+        function limparFormEnvio() {
+            document.getElementById('envioId').value = '';
+            document.getElementById('formEnvio').reset();
+        }
+
+        function editarEnvio(id) {
+            const env = state.envios.find(en => en.id === id);
+            if (!env) return;
+            document.getElementById('envioId').value = env.id;
+            document.getElementById('envioNome').value = env.nome;
+            document.getElementById('envioQtd').value = env.qtd;
+            document.getElementById('envioPrecoTotal').value = env.precoTotal;
+            document.getElementById('envioEstoqueMin').value = env.estoqueMin || 0;
+            switchTab('envio');
+        }
+
+        function excluirEnvio(id) {
+            state.envios = state.envios.filter(en => en.id !== id);
+            salvarLocalStorage();
+        }
+
+        function renderizarEnvios() {
+            const tbody = document.getElementById('tabelaEnvio');
+            const count = document.getElementById('countEnvio');
+            if (count) count.innerText = `${state.envios.length} itens`;
+            if (!tbody) return;
+
+            tbody.innerHTML = state.envios.map(en => {
+                const custoUnit = (en.precoTotal / en.qtd) || 0;
+                return `
+                    <tr class="hover:bg-stone-50/80">
+                        <td class="py-3 font-medium text-stone-800">${en.nome}</td>
+                        <td class="py-3 text-center text-stone-600">${en.qtd} un (R$ ${en.precoTotal.toFixed(2)})</td>
+                        <td class="py-3 text-right font-semibold text-stone-800">R$ ${custoUnit.toFixed(2)} / un</td>
+                        <td class="py-3 text-center font-bold ${en.estoqueAtual <= en.estoqueMin ? 'text-pitanga-600' : 'text-stone-700'}">${en.estoqueAtual} un</td>
+                        <td class="py-3 text-right space-x-1">
+                            <button onclick="editarEnvio('${en.id}')" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="excluirEnvio('${en.id}')" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ESTOQUE GERAL MATERIAIS
+        function renderizarEstoqueGeral() {
+            const tbody = document.getElementById('tabelaEstoqueGeralMateriais');
+            if (!tbody) return;
+
+            let html = '';
+
+            state.insumos.forEach(i => {
+                const alerta = i.estoqueAtual <= i.estoqueMin;
+                html += `
+                    <tr class="hover:bg-stone-50">
+                        <td class="py-2.5 font-semibold text-pitanga-600">Matéria-Prima</td>
+                        <td class="py-2.5 font-medium text-stone-800">${i.nome}</td>
+                        <td class="py-2.5 text-center font-bold text-stone-900">${i.estoqueAtual} ${i.unidade}</td>
+                        <td class="py-2.5 text-center text-stone-500">${i.estoqueMin} ${i.unidade}</td>
+                        <td class="py-2.5 text-center">
+                            ${alerta ? '<span class="bg-pitanga-100 text-pitanga-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Repor Estoque</span>' : '<span class="bg-botanico-100 text-botanico-700 text-[11px] font-bold px-2 py-0.5 rounded-full">OK</span>'}
+                        </td>
+                        <td class="py-2.5 text-right">
+                            <button onclick="ajustarEstoqueMaterial('insumos', '${i.id}', 50)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold">+50</button>
+                            <button onclick="ajustarEstoqueMaterial('insumos', '${i.id}', 100)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold ml-1">+100</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            state.embalagens.forEach(e => {
+                const alerta = e.estoqueAtual <= e.estoqueMin;
+                html += `
+                    <tr class="hover:bg-stone-50">
+                        <td class="py-2.5 font-semibold text-botanico-600">Embalagem</td>
+                        <td class="py-2.5 font-medium text-stone-800">${e.nome}</td>
+                        <td class="py-2.5 text-center font-bold text-stone-900">${e.estoqueAtual} un</td>
+                        <td class="py-2.5 text-center text-stone-500">${e.estoqueMin} un</td>
+                        <td class="py-2.5 text-center">
+                            ${alerta ? '<span class="bg-pitanga-100 text-pitanga-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Repor Estoque</span>' : '<span class="bg-botanico-100 text-botanico-700 text-[11px] font-bold px-2 py-0.5 rounded-full">OK</span>'}
+                        </td>
+                        <td class="py-2.5 text-right">
+                            <button onclick="ajustarEstoqueMaterial('embalagens', '${e.id}', 10)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold">+10</button>
+                            <button onclick="ajustarEstoqueMaterial('embalagens', '${e.id}', 50)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold ml-1">+50</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            state.envios.forEach(en => {
+                const alerta = en.estoqueAtual <= en.estoqueMin;
+                html += `
+                    <tr class="hover:bg-stone-50">
+                        <td class="py-2.5 font-semibold text-amber-600">Envio</td>
+                        <td class="py-2.5 font-medium text-stone-800">${en.nome}</td>
+                        <td class="py-2.5 text-center font-bold text-stone-900">${en.estoqueAtual} un</td>
+                        <td class="py-2.5 text-center text-stone-500">${en.estoqueMin} un</td>
+                        <td class="py-2.5 text-center">
+                            ${alerta ? '<span class="bg-pitanga-100 text-pitanga-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Repor Estoque</span>' : '<span class="bg-botanico-100 text-botanico-700 text-[11px] font-bold px-2 py-0.5 rounded-full">OK</span>'}
+                        </td>
+                        <td class="py-2.5 text-right">
+                            <button onclick="ajustarEstoqueMaterial('envios', '${en.id}', 10)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold">+10</button>
+                            <button onclick="ajustarEstoqueMaterial('envios', '${en.id}', 50)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold ml-1">+50</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function ajustarEstoqueMaterial(tipo, id, delta) {
+            const item = state[tipo].find(x => x.id === id);
+            if (item) {
+                item.estoqueAtual = Math.max(0, (item.estoqueAtual || 0) + delta);
+                salvarLocalStorage();
+            }
+        }
+
+        // TAXAS CANAIS
+        function salvarTaxas(e) {
+            e.preventDefault();
+            state.taxas = {
+                sitePct: parseFloat(document.getElementById('taxaSitePct').value) || 0,
+                siteFixa: parseFloat(document.getElementById('taxaSiteFixa').value) || 0,
+                shopeePct: parseFloat(document.getElementById('taxaShopeePct').value) || 0,
+                shopeeFixa: parseFloat(document.getElementById('taxaShopeeFixa').value) || 0,
+            };
+            salvarLocalStorage();
+        }
+
+        function renderizarTaxas() {
+            document.getElementById('taxaSitePct').value = state.taxas.sitePct;
+            document.getElementById('taxaSiteFixa').value = state.taxas.siteFixa;
+            document.getElementById('taxaShopeePct').value = state.taxas.shopeePct;
+            document.getElementById('taxaShopeeFixa').value = state.taxas.shopeeFixa;
+        }
+
+        // PRECIFICAÇÃO E MONTAGEM DA FÓRMULA
+        function atualizarSelectsFormulacao() {
+            const selectIns = document.getElementById('selectInsumoOpcao');
+            const selectEmb = document.getElementById('selectEmbOpcao');
+            const selectEnv = document.getElementById('selectEnvioOpcao');
+
+            if (selectIns) {
+                selectIns.innerHTML = state.insumos.map(i => `<option value="${i.id}">${i.nome} (R$ ${(i.precoTotal/i.qtdComprada).toFixed(4)}/${i.unidade})</option>`).join('');
+            }
+            if (selectEmb) {
+                selectEmb.innerHTML = state.embalagens.map(e => `<option value="${e.id}">${e.nome} (R$ ${(e.precoTotal/e.qtd).toFixed(2)}/un)</option>`).join('');
+            }
+            if (selectEnv) {
+                selectEnv.innerHTML = state.envios.map(en => `<option value="${en.id}">${en.nome} (R$ ${(en.precoTotal/en.qtd).toFixed(2)}/un)</option>`).join('');
+            }
+        }
+
+        function adicionarInsumoNaFormulacao() {
+            const select = document.getElementById('selectInsumoOpcao');
+            const qtdInput = document.getElementById('selectInsumoQtd');
+            if (!select.value || !qtdInput.value) return;
+
+            const insumo = state.insumos.find(i => i.id === select.value);
+            const qtd = parseFloat(qtdInput.value);
+            if (!insumo || qtd <= 0) return;
+
+            formulacaoAtual.insumos.push({
+                insumoId: insumo.id,
+                nome: insumo.nome,
+                qtd: qtd,
+                unidade: insumo.unidade,
+                custoCalculado: (insumo.precoTotal / insumo.qtdComprada) * qtd
+            });
+
+            qtdInput.value = '';
+            renderizarFormulacaoAtual();
+        }
+
+        function adicionarEmbNaFormulacao() {
+            const select = document.getElementById('selectEmbOpcao');
+            const qtdInput = document.getElementById('selectEmbQtd');
+            if (!select.value || !qtdInput.value) return;
+
+            const emb = state.embalagens.find(e => e.id === select.value);
+            const qtd = parseFloat(qtdInput.value);
+            if (!emb || qtd <= 0) return;
+
+            formulacaoAtual.embalagens.push({
+                embalagemId: emb.id,
+                nome: emb.nome,
+                qtd: qtd,
+                custoCalculado: (emb.precoTotal / emb.qtd) * qtd
+            });
+
+            renderizarFormulacaoAtual();
+        }
+
+        function adicionarEnvioNaFormulacao() {
+            const select = document.getElementById('selectEnvioOpcao');
+            const qtdInput = document.getElementById('selectEnvioQtd');
+            if (!select.value || !qtdInput.value) return;
+
+            const env = state.envios.find(en => en.id === select.value);
+            const qtd = parseFloat(qtdInput.value);
+            if (!env || qtd <= 0) return;
+
+            formulacaoAtual.envios.push({
+                envioId: env.id,
+                nome: env.nome,
+                qtd: qtd,
+                custoCalculado: (env.precoTotal / env.qtd) * qtd
+            });
+
+            renderizarFormulacaoAtual();
+        }
+
+        function removerItemFormulacao(tipo, index) {
+            formulacaoAtual[tipo].splice(index, 1);
+            renderizarFormulacaoAtual();
+        }
+
+        function renderizarFormulacaoAtual() {
+            const containerIns = document.getElementById('listaInsumosFormulacao');
+            const containerEmb = document.getElementById('listaEmbFormulacao');
+            const containerEnv = document.getElementById('listaEnvioFormulacao');
+
+            if (containerIns) {
+                containerIns.innerHTML = formulacaoAtual.insumos.map((item, idx) => `
+                    <div class="flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-stone-200 text-xs">
+                        <span><b>${item.nome}</b> (${item.qtd} ${item.unidade})</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-stone-700">R$ ${item.custoCalculado.toFixed(2)}</span>
+                            <button onclick="removerItemFormulacao('insumos', ${idx})" class="text-pitanga-600 hover:text-pitanga-800"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            if (containerEmb) {
+                containerEmb.innerHTML = formulacaoAtual.embalagens.map((item, idx) => `
+                    <div class="flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-stone-200 text-xs">
+                        <span><b>${item.nome}</b> (${item.qtd} un)</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-stone-700">R$ ${item.custoCalculado.toFixed(2)}</span>
+                            <button onclick="removerItemFormulacao('embalagens', ${idx})" class="text-pitanga-600 hover:text-pitanga-800"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            if (containerEnv) {
+                containerEnv.innerHTML = formulacaoAtual.envios.map((item, idx) => `
+                    <div class="flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-stone-200 text-xs">
+                        <span><b>${item.nome}</b> (${item.qtd} un)</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-stone-700">R$ ${item.custoCalculado.toFixed(2)}</span>
+                            <button onclick="removerItemFormulacao('envios', ${idx})" class="text-pitanga-600 hover:text-pitanga-800"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            if (window.lucide) lucide.createIcons();
+            calcularPrecificacaoSimulada();
+        }
+
+        function calcularPrecificacaoSimulada() {
+            const custoInsumos = formulacaoAtual.insumos.reduce((acc, i) => acc + i.custoCalculado, 0);
+            const custoEmb = formulacaoAtual.embalagens.reduce((acc, e) => acc + e.custoCalculado, 0);
+            const custoEnvio = formulacaoAtual.envios.reduce((acc, en) => acc + en.custoCalculado, 0);
+            const cmvTotal = custoInsumos + custoEmb + custoEnvio;
+
+            const margemPct = parseFloat(document.getElementById('prodMargemLucro').value) || 0;
+            const valorLucroDesejado = cmvTotal * (margemPct / 100);
+            const valorMinimoMeta = cmvTotal + valorLucroDesejado;
+
+            // Site
+            const pctSite = (state.taxas.sitePct || 0) / 100;
+            const precoSite = (1 - pctSite > 0) ? (valorMinimoMeta + (state.taxas.siteFixa || 0)) / (1 - pctSite) : 0;
+            const lucroLiquidoSite = precoSite - (precoSite * pctSite) - (state.taxas.siteFixa || 0) - cmvTotal;
+
+            // Shopee
+            const pctShopee = (state.taxas.shopeePct || 0) / 100;
+            const precoShopee = (1 - pctShopee > 0) ? (valorMinimoMeta + (state.taxas.shopeeFixa || 0)) / (1 - pctShopee) : 0;
+            const lucroLiquidoShopee = precoShopee - (precoShopee * pctShopee) - (state.taxas.shopeeFixa || 0) - cmvTotal;
+
+            document.getElementById('resumoCustoTotal').innerText = `R$ ${cmvTotal.toFixed(2)}`;
+            document.getElementById('resumoPrecoSite').innerText = `R$ ${precoSite.toFixed(2)}`;
+            document.getElementById('resumoLucroSite').innerText = `Lucro: R$ ${lucroLiquidoSite.toFixed(2)}`;
+
+            document.getElementById('resumoPrecoShopee').innerText = `R$ ${precoShopee.toFixed(2)}`;
+            document.getElementById('resumoLucroShopee').innerText = `Lucro: R$ ${lucroLiquidoShopee.toFixed(2)}`;
+
+            return { cmvTotal, precoSite, lucroLiquidoSite, precoShopee, lucroLiquidoShopee };
+        }
+
+        function novoProdutoForm() {
+            document.getElementById('prodId').value = '';
+            document.getElementById('prodNome').value = '';
+            document.getElementById('prodEstoqueInicial').value = '0';
+            document.getElementById('prodMargemLucro').value = '100';
+            formulacaoAtual = { insumos: [], embalagens: [], envios: [] };
+            renderizarFormulacaoAtual();
+        }
+
+        function salvarProdutoCompleto() {
+            const id = document.getElementById('prodId').value;
+            const nome = document.getElementById('prodNome').value.trim();
+            const estoqueAcabado = parseInt(document.getElementById('prodEstoqueInicial').value) || 0;
+            const margemLucro = parseFloat(document.getElementById('prodMargemLucro').value) || 0;
+
+            if (!nome) return;
+
+            const sim = calcularPrecificacaoSimulada();
+
+            const produtoDados = {
+                id: id || Date.now().toString(),
+                nome,
+                estoqueAcabado,
+                margemLucro,
+                cmvTotal: sim.cmvTotal,
+                precoSite: sim.precoSite,
+                precoShopee: sim.precoShopee,
+                formulacao: JSON.parse(JSON.stringify(formulacaoAtual))
+            };
+
+            if (id) {
+                const idx = state.produtos.findIndex(p => p.id === id);
+                if (idx !== -1) state.produtos[idx] = produtoDados;
+            } else {
+                state.produtos.push(produtoDados);
+            }
+
+            salvarLocalStorage();
+            switchTab('produtos');
+        }
+
+        function editarProduto(id) {
+            const p = state.produtos.find(prod => prod.id === id);
+            if (!p) return;
+            document.getElementById('prodId').value = p.id;
+            document.getElementById('prodNome').value = p.nome;
+            document.getElementById('prodEstoqueInicial').value = p.estoqueAcabado;
+            document.getElementById('prodMargemLucro').value = p.margemLucro;
+            formulacaoAtual = JSON.parse(JSON.stringify(p.formulacao || { insumos: [], embalagens: [], envios: [] }));
+            renderizarFormulacaoAtual();
+            switchTab('precificacao');
+        }
+
+        function excluirProduto(id) {
+            state.produtos = state.produtos.filter(p => p.id !== id);
+            salvarLocalStorage();
+        }
+
+        // PRODUTOS ACABADOS & VENDAS AUTOMÁTICAS
+        function renderizarProdutos() {
+            const tbody = document.getElementById('tabelaProdutos');
+            const count = document.getElementById('countProdutos');
+            if (count) count.innerText = `${state.produtos.length} produtos`;
+            if (!tbody) return;
+
+            tbody.innerHTML = state.produtos.map(p => `
+                <tr class="hover:bg-stone-50">
+                    <td class="py-3 font-semibold text-stone-900">${p.nome}</td>
+                    <td class="py-3 text-center text-stone-600 font-medium">R$ ${p.cmvTotal.toFixed(2)}</td>
+                    <td class="py-3 text-center font-bold text-botanico-700">R$ ${p.precoSite.toFixed(2)}</td>
+                    <td class="py-3 text-center font-bold text-pitanga-700">R$ ${p.precoShopee.toFixed(2)}</td>
+                    <td class="py-3 text-center">
+                        <span class="font-extrabold text-sm ${p.estoqueAcabado <= 3 ? 'text-pitanga-600' : 'text-stone-800'}">${p.estoqueAcabado} un</span>
+                    </td>
+                    <td class="py-3 text-center space-x-1">
+                        <button onclick="registrarVendaProduto('${p.id}', 'site')" title="Vender 1 no Site" class="bg-botanico-50 hover:bg-botanico-100 text-botanico-700 border border-botanico-200 text-xs px-2.5 py-1 rounded-lg font-bold">
+                            -1 Site
+                        </button>
+                        <button onclick="registrarVendaProduto('${p.id}', 'shopee')" title="Vender 1 na Shopee" class="bg-pitanga-50 hover:bg-pitanga-100 text-pitanga-700 border border-pitanga-200 text-xs px-2.5 py-1 rounded-lg font-bold">
+                            -1 Shopee
+                        </button>
+                    </td>
+                    <td class="py-3 text-right space-x-1">
+                        <button onclick="abrirModalProduzirLote('${p.id}')" title="Produzir Lote" class="p-1 text-botanico-600 hover:text-botanico-800"><i data-lucide="factory" class="w-4 h-4"></i></button>
+                        <button onclick="editarProduto('${p.id}')" title="Editar" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="excluirProduto('${p.id}')" title="Excluir" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // REGISTRAR VENDA (ABATE PRODUTO E MATERIAIS)
+        function registrarVendaProduto(produtoId, canal) {
+            const produto = state.produtos.find(p => p.id === produtoId);
+            if (!produto) return;
+
+            produto.estoqueAcabado -= 1;
+
+            if (produto.formulacao) {
+                (produto.formulacao.insumos || []).forEach(item => {
+                    const ins = state.insumos.find(i => i.id === item.insumoId);
+                    if (ins) ins.estoqueAtual = Math.max(0, (ins.estoqueAtual || 0) - item.qtd);
+                });
+                (produto.formulacao.embalagens || []).forEach(item => {
+                    const emb = state.embalagens.find(e => e.id === item.embalagemId);
+                    if (emb) emb.estoqueAtual = Math.max(0, (emb.estoqueAtual || 0) - item.qtd);
+                });
+                (produto.formulacao.envios || []).forEach(item => {
+                    const env = state.envios.find(en => en.id === item.envioId);
+                    if (env) env.estoqueAtual = Math.max(0, (env.estoqueAtual || 0) - item.qtd);
+                });
+            }
+
+            salvarLocalStorage();
+        }
+
+        // PRODUÇÃO DE LOTE
+        function abrirModalProduzirLote(produtoId) {
+            const p = state.produtos.find(prod => prod.id === produtoId);
+            if (!p) return;
+            document.getElementById('prodLoteId').value = p.id;
+            document.getElementById('prodLoteNome').value = p.nome;
+            document.getElementById('prodLoteQtd').value = '10';
+            document.getElementById('modalProducao').classList.remove('hidden');
+        }
+
+        function fecharModalProducao() {
+            document.getElementById('modalProducao').classList.add('hidden');
+        }
+
+        function confirmarProducaoLote() {
+            const id = document.getElementById('prodLoteId').value;
+            const qtdLote = parseInt(document.getElementById('prodLoteQtd').value) || 0;
+            const produto = state.produtos.find(p => p.id === id);
+
+            if (!produto || qtdLote <= 0) return;
+
+            produto.estoqueAcabado += qtdLote;
+
+            if (produto.formulacao) {
+                (produto.formulacao.insumos || []).forEach(item => {
+                    const ins = state.insumos.find(i => i.id === item.insumoId);
+                    if (ins) ins.estoqueAtual = Math.max(0, (ins.estoqueAtual || 0) - (item.qtd * qtdLote));
+                });
+                (produto.formulacao.embalagens || []).forEach(item => {
+                    const emb = state.embalagens.find(e => e.id === item.embalagemId);
+                    if (emb) emb.estoqueAtual = Math.max(0, (emb.estoqueAtual || 0) - (item.qtd * qtdLote));
+                });
+            }
+
+            fecharModalProducao();
+            salvarLocalStorage();
+        }
+
+        // BACKUP E RESTAURAÇÃO
+        function exportarDados() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `backup_pitanga_biocosmeticos_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function importarDados(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && typeof importedState === 'object') {
+                        state = importedState;
+                        salvarLocalStorage();
+                    }
+                } catch (err) {
+                    console.error("Arquivo inválido", err);
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
+        }
+
+        // EXPÔS GLOBALMENTE
+        window.switchTab = switchTab;
+        window.salvarInsumo = salvarInsumo;
+        window.limparFormInsumo = limparFormInsumo;
+        window.editarInsumo = editarInsumo;
+        window.excluirInsumo = excluirInsumo;
+        window.salvarEmbalagem = salvarEmbalagem;
+        window.limparFormEmbalagem = limparFormEmbalagem;
+        window.editarEmbalagem = editarEmbalagem;
+        window.excluirEmbalagem = excluirEmbalagem;
+        window.salvarEnvio = salvarEnvio;
+        window.limparFormEnvio = limparFormEnvio;
+        window.editarEnvio = editarEnvio;
+        window.excluirEnvio = excluirEnvio;
+        window.ajustarEstoqueMaterial = ajustarEstoqueMaterial;
+        window.salvarTaxas = salvarTaxas;
+        window.adicionarInsumoNaFormulacao = adicionarInsumoNaFormulacao;
+        window.adicionarEmbNaFormulacao = adicionarEmbNaFormulacao;
+        window.adicionarEnvioNaFormulacao = adicionarEnvioNaFormulacao;
+        window.removerItemFormulacao = removerItemFormulacao;
+        window.calcularPrecificacaoSimulada = calcularPrecificacaoSimulada;
+        window.novoProdutoForm = novoProdutoForm;
+        window.salvarProdutoCompleto = salvarProdutoCompleto;
+        window.editarProduto = editarProduto;
+        window.excluirProduto = excluirProduto;
+        window.registrarVendaProduto = registrarVendaProduto;
+        window.abrirModalProduzirLote = abrirModalProduzirLote;
+        window.fecharModalProducao = fecharModalProducao;
+        window.confirmarProducaoLote = confirmarProducaoLote;
+        window.exportarDados = exportarDados;
+        window.importarDados = importarDados;
+
+        // INICIALIZAÇÃO DA APLICAÇÃO
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarLocalStorage();
+            renderizarTudo();
+        });
+    </script>
+</body>
+</html>
