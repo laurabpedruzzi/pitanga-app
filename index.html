@@ -716,6 +716,53 @@
             if (window.lucide) lucide.createIcons();
         }
 
+        // FUNÇÃO DE CÁLCULO DINÂMICO DE PRECIFICAÇÃO DE PRODUTO
+        function calcularValoresProduto(produto) {
+            if (!produto || !produto.formulacao) {
+                return { cmvTotal: 0, precoSite: 0, lucroLiquidoSite: 0, precoShopee: 0, lucroLiquidoShopee: 0 };
+            }
+
+            // 1. Calcula custo de insumos atualizado
+            const custoInsumos = (produto.formulacao.insumos || []).reduce((acc, item) => {
+                const mat = state.insumos.find(i => i.id === item.insumoId);
+                const custoUnit = (mat && mat.qtdComprada > 0) ? (mat.precoTotal / mat.qtdComprada) : 0;
+                return acc + (custoUnit * item.qtd);
+            }, 0);
+
+            // 2. Calcula custo de embalagens atualizado
+            const custoEmb = (produto.formulacao.embalagens || []).reduce((acc, item) => {
+                const mat = state.embalagens.find(e => e.id === item.embalagemId);
+                const custoUnit = (mat && mat.qtd > 0) ? (mat.precoTotal / mat.qtd) : 0;
+                return acc + (custoUnit * item.qtd);
+            }, 0);
+
+            // 3. Calcula custo de envio atualizado
+            const custoEnvio = (produto.formulacao.envios || []).reduce((acc, item) => {
+                const mat = state.envios.find(en => en.id === item.envioId);
+                const custoUnit = (mat && mat.qtd > 0) ? (mat.precoTotal / mat.qtd) : 0;
+                return acc + (custoUnit * item.qtd);
+            }, 0);
+
+            const custoFixoAdicional = (state.taxas && state.taxas.custoFixoPorProduto) ? state.taxas.custoFixoPorProduto : 0;
+            const cmvTotal = custoInsumos + custoEmb + custoEnvio + custoFixoAdicional;
+
+            const margemPct = produto.margemLucro || 0;
+            const valorLucroDesejado = cmvTotal * (margemPct / 100);
+            const valorMinimoMeta = cmvTotal + valorLucroDesejado;
+
+            // Site
+            const pctSite = (state.taxas.sitePct || 0) / 100;
+            const precoSite = (1 - pctSite > 0) ? (valorMinimoMeta + (state.taxas.siteFixa || 0)) / (1 - pctSite) : 0;
+            const lucroLiquidoSite = precoSite - (precoSite * pctSite) - (state.taxas.siteFixa || 0) - cmvTotal;
+
+            // Shopee
+            const pctShopee = (state.taxas.shopeePct || 0) / 100;
+            const precoShopee = (1 - pctShopee > 0) ? (valorMinimoMeta + (state.taxas.shopeeFixa || 0)) / (1 - pctShopee) : 0;
+            const lucroLiquidoShopee = precoShopee - (precoShopee * pctShopee) - (state.taxas.shopeeFixa || 0) - cmvTotal;
+
+            return { cmvTotal, precoSite, lucroLiquidoSite, precoShopee, lucroLiquidoShopee };
+        }
+
         // INSUMOS
         function salvarInsumo(e) {
             e.preventDefault();
@@ -1267,16 +1314,11 @@
 
             if (!nome) return;
 
-            const sim = calcularPrecificacaoSimulada();
-
             const produtoDados = {
                 id: id || Date.now().toString(),
                 nome,
                 estoqueAcabado,
                 margemLucro,
-                cmvTotal: sim.cmvTotal,
-                precoSite: sim.precoSite,
-                precoShopee: sim.precoShopee,
                 formulacao: JSON.parse(JSON.stringify(formulacaoAtual))
             };
 
@@ -1315,12 +1357,14 @@
             if (count) count.innerText = `${state.produtos.length} produtos`;
             if (!tbody) return;
 
-            tbody.innerHTML = state.produtos.map(p => `
+            tbody.innerHTML = state.produtos.map(p => {
+                const calc = calcularValoresProduto(p);
+                return `
                 <tr class="hover:bg-stone-50">
                     <td class="py-3 font-semibold text-stone-900">${p.nome}</td>
-                    <td class="py-3 text-center text-stone-600 font-medium">R$ ${p.cmvTotal.toFixed(2)}</td>
-                    <td class="py-3 text-center font-bold text-botanico-700">R$ ${p.precoSite.toFixed(2)}</td>
-                    <td class="py-3 text-center font-bold text-pitanga-700">R$ ${p.precoShopee.toFixed(2)}</td>
+                    <td class="py-3 text-center text-stone-600 font-medium">R$ ${calc.cmvTotal.toFixed(2)}</td>
+                    <td class="py-3 text-center font-bold text-botanico-700">R$ ${calc.precoSite.toFixed(2)}</td>
+                    <td class="py-3 text-center font-bold text-pitanga-700">R$ ${calc.precoShopee.toFixed(2)}</td>
                     <td class="py-3 text-center">
                         <span class="font-extrabold text-sm ${p.estoqueAcabado <= 3 ? 'text-pitanga-600' : 'text-stone-800'}">${p.estoqueAcabado} un</span>
                     </td>
@@ -1338,7 +1382,8 @@
                         <button onclick="excluirProduto('${p.id}')" title="Excluir" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // REGISTRAR VENDA (ABATE PRODUTO E MATERIAIS)
