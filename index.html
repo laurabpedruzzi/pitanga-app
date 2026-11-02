@@ -344,7 +344,7 @@
                     <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
                         <i data-lucide="warehouse" class="w-5 h-5 text-pitanga-600"></i> Controle Geral de Estoque de Insumos & Embalagens
                     </h2>
-                    <p class="text-xs text-stone-500">Este estoque é abatido automaticamente ao registrar vendas ou produzir lotes.</p>
+                    <p class="text-xs text-stone-500">Altere diretamente o estoque atual sem alterar o custo por unidade.</p>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -356,7 +356,7 @@
                                 <th class="pb-2 text-center">Qtd Atual</th>
                                 <th class="pb-2 text-center">Estoque Mín.</th>
                                 <th class="pb-2 text-center">Status</th>
-                                <th class="pb-2 text-right">Ajuste Rápido / Entrada</th>
+                                <th class="pb-2 text-right">Edição de Estoque</th>
                             </tr>
                         </thead>
                         <tbody id="tabelaEstoqueGeralMateriais" class="divide-y divide-stone-100">
@@ -367,14 +367,14 @@
             </div>
         </section>
 
-        <!-- ABA 5: TAXAS DOS CANAIS DE VENDA -->
+        <!-- ABA 5: TAXAS DOS CANAIS DE VENDA E CUSTOS FIXOS -->
         <section id="content-taxas" class="tab-content space-y-6">
             <div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl border border-nude-200 shadow-sm space-y-6">
                 <div class="border-b border-nude-100 pb-3">
                     <h2 class="font-bold text-stone-900 text-base flex items-center gap-2">
-                        <i data-lucide="percent" class="w-5 h-5 text-pitanga-600"></i> Configuração de Taxas dos Canais de Venda
+                        <i data-lucide="percent" class="w-5 h-5 text-pitanga-600"></i> Taxas dos Canais & Custos Fixos
                     </h2>
-                    <p class="text-xs text-stone-500">As taxas cadastradas aqui serão aplicadas automaticamente na precificação final dos seus produtos.</p>
+                    <p class="text-xs text-stone-500">Configure as taxas de cada plataforma e os custos fixos operacionais da sua marca.</p>
                 </div>
 
                 <form id="formTaxas" onsubmit="salvarTaxas(event)" class="space-y-6">
@@ -412,8 +412,26 @@
                         </div>
                     </div>
 
+                    <!-- Nova Seção: Custos Fixos Operacionais -->
+                    <div class="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
+                        <h3 class="font-bold text-stone-800 text-sm flex items-center gap-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-amber-600"></i> Custos Fixos Operacionais (Energia, Gasolina, Aluguel, etc.)
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Custo Fixo Total Mensal (R$)</label>
+                                <input type="number" step="0.01" id="custoFixoMensal" placeholder="Ex: 500.00" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-stone-600 mb-1">Custo Fixo Adicionado por Produto (R$)</label>
+                                <input type="number" step="0.01" id="custoFixoPorProduto" placeholder="Ex: 2.50" class="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:ring-2 focus:ring-pitanga-500 focus:outline-none">
+                                <span class="text-[11px] text-stone-500">Rateio fixo aplicado no custo base de cada item.</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <button type="submit" class="w-full bg-pitanga-600 hover:bg-pitanga-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-                        <i data-lucide="save" class="w-4 h-4"></i> Atualizar Taxas dos Canais
+                        <i data-lucide="save" class="w-4 h-4"></i> Salvar Taxas & Custos Fixos
                     </button>
                 </form>
             </div>
@@ -616,7 +634,7 @@
             insumos: [],
             embalagens: [],
             envios: [],
-            taxas: { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0 },
+            taxas: { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0, custoFixoMensal: 0, custoFixoPorProduto: 0 },
             produtos: []
         };
 
@@ -664,6 +682,9 @@
             if (data) {
                 try {
                     state = JSON.parse(data);
+                    if (!state.taxas) state.taxas = { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0, custoFixoMensal: 0, custoFixoPorProduto: 0 };
+                    if (state.taxas.custoFixoMensal === undefined) state.taxas.custoFixoMensal = 0;
+                    if (state.taxas.custoFixoPorProduto === undefined) state.taxas.custoFixoPorProduto = 0;
                 } catch(e) { console.error("Erro ao converter JSON", e); }
             } else {
                 state = {
@@ -679,7 +700,7 @@
                         { id: '1', nome: 'Caixa Papelão Kraft P', qtd: 50, precoTotal: 75, estoqueAtual: 50, estoqueMin: 10 },
                         { id: '2', nome: 'Papel de Seda + Adesivo', qtd: 100, precoTotal: 30, estoqueAtual: 100, estoqueMin: 20 }
                     ],
-                    taxas: { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0 },
+                    taxas: { sitePct: 4.5, siteFixa: 0.5, shopeePct: 20, shopeeFixa: 4.0, custoFixoMensal: 0, custoFixoPorProduto: 0 },
                     produtos: []
                 };
             }
@@ -708,7 +729,20 @@
             if (id) {
                 const idx = state.insumos.findIndex(i => i.id === id);
                 if (idx !== -1) {
-                    state.insumos[idx] = { ...state.insumos[idx], nome, qtdComprada, unidade, precoTotal, estoqueMin };
+                    const existente = state.insumos[idx];
+                    const novoEstoque = (existente.estoqueAtual || 0) + qtdComprada;
+                    const novaQtdCompradaTotal = (existente.qtdComprada || 0) + qtdComprada;
+                    const novoPrecoTotal = (existente.precoTotal || 0) + precoTotal;
+
+                    state.insumos[idx] = {
+                        ...existente,
+                        nome,
+                        qtdComprada: novaQtdCompradaTotal,
+                        unidade,
+                        precoTotal: novoPrecoTotal,
+                        estoqueAtual: novoEstoque,
+                        estoqueMin
+                    };
                 }
             } else {
                 state.insumos.push({
@@ -724,19 +758,21 @@
 
         function limparFormInsumo() {
             document.getElementById('insumoId').value = '';
-            document.getElementById('formInsumo').reset();
+            document.getElementById('insumoNome').value = '';
+            document.getElementById('insumoQtdComprada').value = '';
+            document.getElementById('insumoPrecoTotal').value = '';
+            document.getElementById('insumoEstoqueMin').value = '';
         }
 
         function editarInsumo(id) {
-            const ins = state.insumos.find(i => i.id === id);
-            if (!ins) return;
-            document.getElementById('insumoId').value = ins.id;
-            document.getElementById('insumoNome').value = ins.nome;
-            document.getElementById('insumoQtdComprada').value = ins.qtdComprada;
-            document.getElementById('insumoUnidade').value = ins.unidade;
-            document.getElementById('insumoPrecoTotal').value = ins.precoTotal;
-            document.getElementById('insumoEstoqueMin').value = ins.estoqueMin || 0;
-            switchTab('insumos');
+            const item = state.insumos.find(i => i.id === id);
+            if (!item) return;
+            document.getElementById('insumoId').value = item.id;
+            document.getElementById('insumoNome').value = item.nome;
+            document.getElementById('insumoQtdComprada').value = '';
+            document.getElementById('insumoUnidade').value = item.unidade;
+            document.getElementById('insumoPrecoTotal').value = '';
+            document.getElementById('insumoEstoqueMin').value = item.estoqueMin;
         }
 
         function excluirInsumo(id) {
@@ -751,16 +787,16 @@
             if (!tbody) return;
 
             tbody.innerHTML = state.insumos.map(i => {
-                const custoUnit = (i.precoTotal / i.qtdComprada) || 0;
+                const custoUnit = i.qtdComprada > 0 ? (i.precoTotal / i.qtdComprada) : 0;
                 return `
-                    <tr class="hover:bg-stone-50/80">
-                        <td class="py-3 font-medium text-stone-800">${i.nome}</td>
-                        <td class="py-3 text-center text-stone-600">${i.qtdComprada} ${i.unidade} (R$ ${i.precoTotal.toFixed(2)})</td>
-                        <td class="py-3 text-right font-semibold text-stone-800">R$ ${custoUnit.toFixed(4)} / ${i.unidade}</td>
-                        <td class="py-3 text-center font-bold ${i.estoqueAtual <= i.estoqueMin ? 'text-pitanga-600' : 'text-stone-700'}">${i.estoqueAtual} ${i.unidade}</td>
-                        <td class="py-3 text-right space-x-1">
-                            <button onclick="editarInsumo('${i.id}')" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="excluirInsumo('${i.id}')" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <tr class="hover:bg-stone-50">
+                        <td class="py-2.5 font-medium text-stone-800">${i.nome}</td>
+                        <td class="py-2.5 text-center text-stone-600">${i.qtdComprada} ${i.unidade} (R$ ${i.precoTotal.toFixed(2)})</td>
+                        <td class="py-2.5 text-right font-semibold text-stone-900">R$ ${custoUnit.toFixed(4)} / ${i.unidade}</td>
+                        <td class="py-2.5 text-center font-bold text-stone-800">${i.estoqueAtual} ${i.unidade}</td>
+                        <td class="py-2.5 text-right space-x-1">
+                            <button onclick="editarInsumo('${i.id}')" title="Nova Compra/Editar" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="excluirInsumo('${i.id}')" title="Excluir" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </td>
                     </tr>
                 `;
@@ -779,7 +815,19 @@
             if (id) {
                 const idx = state.embalagens.findIndex(e => e.id === id);
                 if (idx !== -1) {
-                    state.embalagens[idx] = { ...state.embalagens[idx], nome, qtd, precoTotal, estoqueMin };
+                    const existente = state.embalagens[idx];
+                    const novoEstoque = (existente.estoqueAtual || 0) + qtd;
+                    const novaQtdTotal = (existente.qtd || 0) + qtd;
+                    const novoPrecoTotal = (existente.precoTotal || 0) + precoTotal;
+
+                    state.embalagens[idx] = {
+                        ...existente,
+                        nome,
+                        qtd: novaQtdTotal,
+                        precoTotal: novoPrecoTotal,
+                        estoqueAtual: novoEstoque,
+                        estoqueMin
+                    };
                 }
             } else {
                 state.embalagens.push({
@@ -795,18 +843,20 @@
 
         function limparFormEmbalagem() {
             document.getElementById('embId').value = '';
-            document.getElementById('formEmbalagem').reset();
+            document.getElementById('embNome').value = '';
+            document.getElementById('embQtd').value = '';
+            document.getElementById('embPrecoTotal').value = '';
+            document.getElementById('embEstoqueMin').value = '';
         }
 
         function editarEmbalagem(id) {
-            const emb = state.embalagens.find(e => e.id === id);
-            if (!emb) return;
-            document.getElementById('embId').value = emb.id;
-            document.getElementById('embNome').value = emb.nome;
-            document.getElementById('embQtd').value = emb.qtd;
-            document.getElementById('embPrecoTotal').value = emb.precoTotal;
-            document.getElementById('embEstoqueMin').value = emb.estoqueMin || 0;
-            switchTab('embalagens');
+            const item = state.embalagens.find(e => e.id === id);
+            if (!item) return;
+            document.getElementById('embId').value = item.id;
+            document.getElementById('embNome').value = item.nome;
+            document.getElementById('embQtd').value = '';
+            document.getElementById('embPrecoTotal').value = '';
+            document.getElementById('embEstoqueMin').value = item.estoqueMin;
         }
 
         function excluirEmbalagem(id) {
@@ -821,16 +871,16 @@
             if (!tbody) return;
 
             tbody.innerHTML = state.embalagens.map(e => {
-                const custoUnit = (e.precoTotal / e.qtd) || 0;
+                const custoUnit = e.qtd > 0 ? (e.precoTotal / e.qtd) : 0;
                 return `
-                    <tr class="hover:bg-stone-50/80">
-                        <td class="py-3 font-medium text-stone-800">${e.nome}</td>
-                        <td class="py-3 text-center text-stone-600">${e.qtd} un (R$ ${e.precoTotal.toFixed(2)})</td>
-                        <td class="py-3 text-right font-semibold text-stone-800">R$ ${custoUnit.toFixed(2)} / un</td>
-                        <td class="py-3 text-center font-bold ${e.estoqueAtual <= e.estoqueMin ? 'text-pitanga-600' : 'text-stone-700'}">${e.estoqueAtual} un</td>
-                        <td class="py-3 text-right space-x-1">
-                            <button onclick="editarEmbalagem('${e.id}')" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="excluirEmbalagem('${e.id}')" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <tr class="hover:bg-stone-50">
+                        <td class="py-2.5 font-medium text-stone-800">${e.nome}</td>
+                        <td class="py-2.5 text-center text-stone-600">${e.qtd} un (R$ ${e.precoTotal.toFixed(2)})</td>
+                        <td class="py-2.5 text-right font-semibold text-stone-900">R$ ${custoUnit.toFixed(2)} / un</td>
+                        <td class="py-2.5 text-center font-bold text-stone-800">${e.estoqueAtual} un</td>
+                        <td class="py-2.5 text-right space-x-1">
+                            <button onclick="editarEmbalagem('${e.id}')" title="Nova Compra/Editar" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="excluirEmbalagem('${e.id}')" title="Excluir" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </td>
                     </tr>
                 `;
@@ -849,7 +899,19 @@
             if (id) {
                 const idx = state.envios.findIndex(en => en.id === id);
                 if (idx !== -1) {
-                    state.envios[idx] = { ...state.envios[idx], nome, qtd, precoTotal, estoqueMin };
+                    const existente = state.envios[idx];
+                    const novoEstoque = (existente.estoqueAtual || 0) + qtd;
+                    const novaQtdTotal = (existente.qtd || 0) + qtd;
+                    const novoPrecoTotal = (existente.precoTotal || 0) + precoTotal;
+
+                    state.envios[idx] = {
+                        ...existente,
+                        nome,
+                        qtd: novaQtdTotal,
+                        precoTotal: novoPrecoTotal,
+                        estoqueAtual: novoEstoque,
+                        estoqueMin
+                    };
                 }
             } else {
                 state.envios.push({
@@ -865,18 +927,20 @@
 
         function limparFormEnvio() {
             document.getElementById('envioId').value = '';
-            document.getElementById('formEnvio').reset();
+            document.getElementById('envioNome').value = '';
+            document.getElementById('envioQtd').value = '';
+            document.getElementById('envioPrecoTotal').value = '';
+            document.getElementById('envioEstoqueMin').value = '';
         }
 
         function editarEnvio(id) {
-            const env = state.envios.find(en => en.id === id);
-            if (!env) return;
-            document.getElementById('envioId').value = env.id;
-            document.getElementById('envioNome').value = env.nome;
-            document.getElementById('envioQtd').value = env.qtd;
-            document.getElementById('envioPrecoTotal').value = env.precoTotal;
-            document.getElementById('envioEstoqueMin').value = env.estoqueMin || 0;
-            switchTab('envio');
+            const item = state.envios.find(en => en.id === id);
+            if (!item) return;
+            document.getElementById('envioId').value = item.id;
+            document.getElementById('envioNome').value = item.nome;
+            document.getElementById('envioQtd').value = '';
+            document.getElementById('envioPrecoTotal').value = '';
+            document.getElementById('envioEstoqueMin').value = item.estoqueMin;
         }
 
         function excluirEnvio(id) {
@@ -891,23 +955,23 @@
             if (!tbody) return;
 
             tbody.innerHTML = state.envios.map(en => {
-                const custoUnit = (en.precoTotal / en.qtd) || 0;
+                const custoUnit = en.qtd > 0 ? (en.precoTotal / en.qtd) : 0;
                 return `
-                    <tr class="hover:bg-stone-50/80">
-                        <td class="py-3 font-medium text-stone-800">${en.nome}</td>
-                        <td class="py-3 text-center text-stone-600">${en.qtd} un (R$ ${en.precoTotal.toFixed(2)})</td>
-                        <td class="py-3 text-right font-semibold text-stone-800">R$ ${custoUnit.toFixed(2)} / un</td>
-                        <td class="py-3 text-center font-bold ${en.estoqueAtual <= en.estoqueMin ? 'text-pitanga-600' : 'text-stone-700'}">${en.estoqueAtual} un</td>
-                        <td class="py-3 text-right space-x-1">
-                            <button onclick="editarEnvio('${en.id}')" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                            <button onclick="excluirEnvio('${en.id}')" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <tr class="hover:bg-stone-50">
+                        <td class="py-2.5 font-medium text-stone-800">${en.nome}</td>
+                        <td class="py-2.5 text-center text-stone-600">${en.qtd} un (R$ ${en.precoTotal.toFixed(2)})</td>
+                        <td class="py-2.5 text-right font-semibold text-stone-900">R$ ${custoUnit.toFixed(2)} / un</td>
+                        <td class="py-2.5 text-center font-bold text-stone-800">${en.estoqueAtual} un</td>
+                        <td class="py-2.5 text-right space-x-1">
+                            <button onclick="editarEnvio('${en.id}')" title="Nova Compra/Editar" class="p-1 text-stone-400 hover:text-stone-700"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="excluirEnvio('${en.id}')" title="Excluir" class="p-1 text-stone-400 hover:text-pitanga-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        // ESTOQUE GERAL MATERIAIS
+        // ESTOQUE GERAL MATERIAIS COM EDIÇÃO DIRETA DA QUANTIDADE
         function renderizarEstoqueGeral() {
             const tbody = document.getElementById('tabelaEstoqueGeralMateriais');
             if (!tbody) return;
@@ -925,9 +989,9 @@
                         <td class="py-2.5 text-center">
                             ${alerta ? '<span class="bg-pitanga-100 text-pitanga-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Repor Estoque</span>' : '<span class="bg-botanico-100 text-botanico-700 text-[11px] font-bold px-2 py-0.5 rounded-full">OK</span>'}
                         </td>
-                        <td class="py-2.5 text-right">
-                            <button onclick="ajustarEstoqueMaterial('insumos', '${i.id}', 50)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold">+50</button>
-                            <button onclick="ajustarEstoqueMaterial('insumos', '${i.id}', 100)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold ml-1">+100</button>
+                        <td class="py-2.5 text-right flex items-center justify-end gap-1">
+                            <input type="number" step="0.01" id="inputEstoqueManual_insumos_${i.id}" value="${i.estoqueAtual}" class="w-20 px-2 py-1 border border-stone-300 rounded-lg text-xs text-center font-bold">
+                            <button onclick="salvarEdicaoEstoqueDireta('insumos', '${i.id}')" title="Salvar Nova Qtd" class="bg-pitanga-600 hover:bg-pitanga-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold">Definir</button>
                         </td>
                     </tr>
                 `;
@@ -944,9 +1008,9 @@
                         <td class="py-2.5 text-center">
                             ${alerta ? '<span class="bg-pitanga-100 text-pitanga-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Repor Estoque</span>' : '<span class="bg-botanico-100 text-botanico-700 text-[11px] font-bold px-2 py-0.5 rounded-full">OK</span>'}
                         </td>
-                        <td class="py-2.5 text-right">
-                            <button onclick="ajustarEstoqueMaterial('embalagens', '${e.id}', 10)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold">+10</button>
-                            <button onclick="ajustarEstoqueMaterial('embalagens', '${e.id}', 50)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold ml-1">+50</button>
+                        <td class="py-2.5 text-right flex items-center justify-end gap-1">
+                            <input type="number" step="1" id="inputEstoqueManual_embalagens_${e.id}" value="${e.estoqueAtual}" class="w-20 px-2 py-1 border border-stone-300 rounded-lg text-xs text-center font-bold">
+                            <button onclick="salvarEdicaoEstoqueDireta('embalagens', '${e.id}')" title="Salvar Nova Qtd" class="bg-pitanga-600 hover:bg-pitanga-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold">Definir</button>
                         </td>
                     </tr>
                 `;
@@ -963,15 +1027,29 @@
                         <td class="py-2.5 text-center">
                             ${alerta ? '<span class="bg-pitanga-100 text-pitanga-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Repor Estoque</span>' : '<span class="bg-botanico-100 text-botanico-700 text-[11px] font-bold px-2 py-0.5 rounded-full">OK</span>'}
                         </td>
-                        <td class="py-2.5 text-right">
-                            <button onclick="ajustarEstoqueMaterial('envios', '${en.id}', 10)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold">+10</button>
-                            <button onclick="ajustarEstoqueMaterial('envios', '${en.id}', 50)" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs px-2.5 py-1 rounded-lg font-semibold ml-1">+50</button>
+                        <td class="py-2.5 text-right flex items-center justify-end gap-1">
+                            <input type="number" step="1" id="inputEstoqueManual_envios_${en.id}" value="${en.estoqueAtual}" class="w-20 px-2 py-1 border border-stone-300 rounded-lg text-xs text-center font-bold">
+                            <button onclick="salvarEdicaoEstoqueDireta('envios', '${en.id}')" title="Salvar Nova Qtd" class="bg-pitanga-600 hover:bg-pitanga-700 text-white text-xs px-2.5 py-1 rounded-lg font-semibold">Definir</button>
                         </td>
                     </tr>
                 `;
             });
 
             tbody.innerHTML = html;
+        }
+
+        // EDITAR A QUANTIDADE DIRETAMENTE SEM ALTERAR O CUSTO UNITÁRIO
+        function salvarEdicaoEstoqueDireta(tipo, id) {
+            const input = document.getElementById(`inputEstoqueManual_${tipo}_${id}`);
+            if (!input) return;
+            const novaQtd = parseFloat(input.value);
+            if (isNaN(novaQtd) || novaQtd < 0) return;
+
+            const item = state[tipo].find(x => x.id === id);
+            if (item) {
+                item.estoqueAtual = novaQtd;
+                salvarLocalStorage();
+            }
         }
 
         function ajustarEstoqueMaterial(tipo, id, delta) {
@@ -982,7 +1060,7 @@
             }
         }
 
-        // TAXAS CANAIS
+        // TAXAS CANAIS E CUSTOS FIXOS
         function salvarTaxas(e) {
             e.preventDefault();
             state.taxas = {
@@ -990,148 +1068,163 @@
                 siteFixa: parseFloat(document.getElementById('taxaSiteFixa').value) || 0,
                 shopeePct: parseFloat(document.getElementById('taxaShopeePct').value) || 0,
                 shopeeFixa: parseFloat(document.getElementById('taxaShopeeFixa').value) || 0,
+                custoFixoMensal: parseFloat(document.getElementById('custoFixoMensal').value) || 0,
+                custoFixoPorProduto: parseFloat(document.getElementById('custoFixoPorProduto').value) || 0,
             };
             salvarLocalStorage();
         }
 
         function renderizarTaxas() {
-            document.getElementById('taxaSitePct').value = state.taxas.sitePct;
-            document.getElementById('taxaSiteFixa').value = state.taxas.siteFixa;
-            document.getElementById('taxaShopeePct').value = state.taxas.shopeePct;
-            document.getElementById('taxaShopeeFixa').value = state.taxas.shopeeFixa;
+            document.getElementById('taxaSitePct').value = state.taxas.sitePct || 0;
+            document.getElementById('taxaSiteFixa').value = state.taxas.siteFixa || 0;
+            document.getElementById('taxaShopeePct').value = state.taxas.shopeePct || 0;
+            document.getElementById('taxaShopeeFixa').value = state.taxas.shopeeFixa || 0;
+            document.getElementById('custoFixoMensal').value = state.taxas.custoFixoMensal || 0;
+            document.getElementById('custoFixoPorProduto').value = state.taxas.custoFixoPorProduto || 0;
         }
 
-        // PRECIFICAÇÃO E MONTAGEM DA FÓRMULA
+        // PRECIFICAÇÃO E MONTAGEM DE FÓRMULA
         function atualizarSelectsFormulacao() {
-            const selectIns = document.getElementById('selectInsumoOpcao');
-            const selectEmb = document.getElementById('selectEmbOpcao');
-            const selectEnv = document.getElementById('selectEnvioOpcao');
+            const selIns = document.getElementById('selectInsumoOpcao');
+            const selEmb = document.getElementById('selectEmbOpcao');
+            const selEnv = document.getElementById('selectEnvioOpcao');
 
-            if (selectIns) {
-                selectIns.innerHTML = state.insumos.map(i => `<option value="${i.id}">${i.nome} (R$ ${(i.precoTotal/i.qtdComprada).toFixed(4)}/${i.unidade})</option>`).join('');
+            if (selIns) {
+                selIns.innerHTML = state.insumos.length ? state.insumos.map(i => `<option value="${i.id}">${i.nome} (${i.unidade})</option>`).join('') : '<option value="">Sem matérias-primas</option>';
             }
-            if (selectEmb) {
-                selectEmb.innerHTML = state.embalagens.map(e => `<option value="${e.id}">${e.nome} (R$ ${(e.precoTotal/e.qtd).toFixed(2)}/un)</option>`).join('');
+            if (selEmb) {
+                selEmb.innerHTML = state.embalagens.length ? state.embalagens.map(e => `<option value="${e.id}">${e.nome}</option>`).join('') : '<option value="">Sem embalagens</option>';
             }
-            if (selectEnv) {
-                selectEnv.innerHTML = state.envios.map(en => `<option value="${en.id}">${en.nome} (R$ ${(en.precoTotal/en.qtd).toFixed(2)}/un)</option>`).join('');
+            if (selEnv) {
+                selEnv.innerHTML = state.envios.length ? state.envios.map(en => `<option value="${en.id}">${en.nome}</option>`).join('') : '<option value="">Sem itens de envio</option>';
             }
+
+            renderizarFormulacaoAtual();
         }
 
         function adicionarInsumoNaFormulacao() {
-            const select = document.getElementById('selectInsumoOpcao');
-            const qtdInput = document.getElementById('selectInsumoQtd');
-            if (!select.value || !qtdInput.value) return;
+            const id = document.getElementById('selectInsumoOpcao').value;
+            const qtd = parseFloat(document.getElementById('selectInsumoQtd').value);
+            if (!id || isNaN(qtd) || qtd <= 0) return;
 
-            const insumo = state.insumos.find(i => i.id === select.value);
-            const qtd = parseFloat(qtdInput.value);
-            if (!insumo || qtd <= 0) return;
+            const item = state.insumos.find(i => i.id === id);
+            if (!item) return;
+
+            const custoUnit = item.qtdComprada > 0 ? (item.precoTotal / item.qtdComprada) : 0;
+            const custoCalculado = custoUnit * qtd;
 
             formulacaoAtual.insumos.push({
-                insumoId: insumo.id,
-                nome: insumo.nome,
-                qtd: qtd,
-                unidade: insumo.unidade,
-                custoCalculado: (insumo.precoTotal / insumo.qtdComprada) * qtd
+                insumoId: item.id,
+                nome: item.nome,
+                qtd,
+                unidade: item.unidade,
+                custoCalculado
             });
 
-            qtdInput.value = '';
+            document.getElementById('selectInsumoQtd').value = '';
             renderizarFormulacaoAtual();
         }
 
         function adicionarEmbNaFormulacao() {
-            const select = document.getElementById('selectEmbOpcao');
-            const qtdInput = document.getElementById('selectEmbQtd');
-            if (!select.value || !qtdInput.value) return;
+            const id = document.getElementById('selectEmbOpcao').value;
+            const qtd = parseInt(document.getElementById('selectEmbQtd').value);
+            if (!id || isNaN(qtd) || qtd <= 0) return;
 
-            const emb = state.embalagens.find(e => e.id === select.value);
-            const qtd = parseFloat(qtdInput.value);
-            if (!emb || qtd <= 0) return;
+            const item = state.embalagens.find(e => e.id === id);
+            if (!item) return;
+
+            const custoUnit = item.qtd > 0 ? (item.precoTotal / item.qtd) : 0;
+            const custoCalculado = custoUnit * qtd;
 
             formulacaoAtual.embalagens.push({
-                embalagemId: emb.id,
-                nome: emb.nome,
-                qtd: qtd,
-                custoCalculado: (emb.precoTotal / emb.qtd) * qtd
+                embalagemId: item.id,
+                nome: item.nome,
+                qtd,
+                custoCalculado
             });
 
             renderizarFormulacaoAtual();
         }
 
         function adicionarEnvioNaFormulacao() {
-            const select = document.getElementById('selectEnvioOpcao');
-            const qtdInput = document.getElementById('selectEnvioQtd');
-            if (!select.value || !qtdInput.value) return;
+            const id = document.getElementById('selectEnvioOpcao').value;
+            const qtd = parseInt(document.getElementById('selectEnvioQtd').value);
+            if (!id || isNaN(qtd) || qtd <= 0) return;
 
-            const env = state.envios.find(en => en.id === select.value);
-            const qtd = parseFloat(qtdInput.value);
-            if (!env || qtd <= 0) return;
+            const item = state.envios.find(en => en.id === id);
+            if (!item) return;
+
+            const custoUnit = item.qtd > 0 ? (item.precoTotal / item.qtd) : 0;
+            const custoCalculado = custoUnit * qtd;
 
             formulacaoAtual.envios.push({
-                envioId: env.id,
-                nome: env.nome,
-                qtd: qtd,
-                custoCalculado: (env.precoTotal / env.qtd) * qtd
+                envioId: item.id,
+                nome: item.nome,
+                qtd,
+                custoCalculado
             });
 
             renderizarFormulacaoAtual();
         }
 
-        function removerItemFormulacao(tipo, index) {
-            formulacaoAtual[tipo].splice(index, 1);
+        function removerItemFormulacao(tipo, idx) {
+            formulacaoAtual[tipo].splice(idx, 1);
             renderizarFormulacaoAtual();
         }
 
         function renderizarFormulacaoAtual() {
-            const containerIns = document.getElementById('listaInsumosFormulacao');
-            const containerEmb = document.getElementById('listaEmbFormulacao');
-            const containerEnv = document.getElementById('listaEnvioFormulacao');
+            const elIns = document.getElementById('listaInsumosFormulacao');
+            const elEmb = document.getElementById('listaEmbFormulacao');
+            const elEnv = document.getElementById('listaEnvioFormulacao');
 
-            if (containerIns) {
-                containerIns.innerHTML = formulacaoAtual.insumos.map((item, idx) => `
+            if (elIns) {
+                elIns.innerHTML = formulacaoAtual.insumos.map((i, idx) => `
                     <div class="flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-stone-200 text-xs">
-                        <span><b>${item.nome}</b> (${item.qtd} ${item.unidade})</span>
+                        <span><b>${i.nome}</b> - ${i.qtd} ${i.unidade}</span>
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-stone-700">R$ ${item.custoCalculado.toFixed(2)}</span>
-                            <button onclick="removerItemFormulacao('insumos', ${idx})" class="text-pitanga-600 hover:text-pitanga-800"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                            <span class="font-semibold text-stone-700">R$ ${i.custoCalculado.toFixed(2)}</span>
+                            <button onclick="removerItemFormulacao('insumos', ${idx})" class="text-stone-400 hover:text-pitanga-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            if (containerEmb) {
-                containerEmb.innerHTML = formulacaoAtual.embalagens.map((item, idx) => `
+            if (elEmb) {
+                elEmb.innerHTML = formulacaoAtual.embalagens.map((e, idx) => `
                     <div class="flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-stone-200 text-xs">
-                        <span><b>${item.nome}</b> (${item.qtd} un)</span>
+                        <span><b>${e.nome}</b> - ${e.qtd} un</span>
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-stone-700">R$ ${item.custoCalculado.toFixed(2)}</span>
-                            <button onclick="removerItemFormulacao('embalagens', ${idx})" class="text-pitanga-600 hover:text-pitanga-800"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                            <span class="font-semibold text-stone-700">R$ ${e.custoCalculado.toFixed(2)}</span>
+                            <button onclick="removerItemFormulacao('embalagens', ${idx})" class="text-stone-400 hover:text-pitanga-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            if (containerEnv) {
-                containerEnv.innerHTML = formulacaoAtual.envios.map((item, idx) => `
+            if (elEnv) {
+                elEnv.innerHTML = formulacaoAtual.envios.map((en, idx) => `
                     <div class="flex justify-between items-center bg-white px-3 py-1.5 rounded-lg border border-stone-200 text-xs">
-                        <span><b>${item.nome}</b> (${item.qtd} un)</span>
+                        <span><b>${en.nome}</b> - ${en.qtd} un</span>
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-stone-700">R$ ${item.custoCalculado.toFixed(2)}</span>
-                            <button onclick="removerItemFormulacao('envios', ${idx})" class="text-pitanga-600 hover:text-pitanga-800"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                            <span class="font-semibold text-stone-700">R$ ${en.custoCalculado.toFixed(2)}</span>
+                            <button onclick="removerItemFormulacao('envios', ${idx})" class="text-stone-400 hover:text-pitanga-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
                 `).join('');
             }
 
-            if (window.lucide) lucide.createIcons();
             calcularPrecificacaoSimulada();
+            if (window.lucide) lucide.createIcons();
         }
 
+        // PRECIFICAÇÃO INCLUINDO RATEIO DE CUSTO FIXO
         function calcularPrecificacaoSimulada() {
             const custoInsumos = formulacaoAtual.insumos.reduce((acc, i) => acc + i.custoCalculado, 0);
             const custoEmb = formulacaoAtual.embalagens.reduce((acc, e) => acc + e.custoCalculado, 0);
             const custoEnvio = formulacaoAtual.envios.reduce((acc, en) => acc + en.custoCalculado, 0);
-            const cmvTotal = custoInsumos + custoEmb + custoEnvio;
+            const custoFixoAdicional = (state.taxas && state.taxas.custoFixoPorProduto) ? state.taxas.custoFixoPorProduto : 0;
+            
+            const cmvTotal = custoInsumos + custoEmb + custoEnvio + custoFixoAdicional;
 
             const margemPct = parseFloat(document.getElementById('prodMargemLucro').value) || 0;
             const valorLucroDesejado = cmvTotal * (margemPct / 100);
@@ -1340,7 +1433,7 @@
             }
         }
 
-        // EXPÔS GLOBALMENTE
+        // EXPÔS GLOBALMENTE TODAS AS FUNÇÕES
         window.switchTab = switchTab;
         window.salvarInsumo = salvarInsumo;
         window.limparFormInsumo = limparFormInsumo;
@@ -1354,6 +1447,7 @@
         window.limparFormEnvio = limparFormEnvio;
         window.editarEnvio = editarEnvio;
         window.excluirEnvio = excluirEnvio;
+        window.salvarEdicaoEstoqueDireta = salvarEdicaoEstoqueDireta;
         window.ajustarEstoqueMaterial = ajustarEstoqueMaterial;
         window.salvarTaxas = salvarTaxas;
         window.adicionarInsumoNaFormulacao = adicionarInsumoNaFormulacao;
